@@ -52,29 +52,26 @@ def apply_spec(base_instance, spec):
 
     # Rebuild mob matrix using original UTM coordinates stored in each well
     n = len(wells)
+    mob = [[0] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                continue
+            wi, wj = wells[i], wells[j]
+            if 'utm_x' in wi and 'utm_x' in wj:
+                dx = wi['utm_x'] - wj['utm_x']
+                dy = wi['utm_y'] - wj['utm_y']
+                dist_km = math.sqrt(dx*dx + dy*dy) / 1000.0
+                mob[i][j] = max(1, math.ceil(dist_km / 5.0))
+            else:
+                # Fall back to original mob_time if UTM not stored
+                orig_i = base_instance['well_name_to_id'].get(wi['name'], i)
+                orig_j = base_instance['well_name_to_id'].get(wj['name'], j)
+                mob[i][j] = base_instance['mob_time'][orig_i][orig_j]
+
     inst['wells']   = wells
     inst['n_wells'] = n
-
-    # Rebuild mob matrix only if wells were filtered (indices changed)
-    if n < base_instance['n_wells']:
-        mob = [[0] * n for _ in range(n)]
-        name_to_base_idx = base_instance.get('well_name_to_id', {})
-        for i in range(n):
-            for j in range(n):
-                if i == j:
-                    continue
-                wi, wj = wells[i], wells[j]
-                if 'utm_x' in wi and 'utm_x' in wj:
-                    dx = wi['utm_x'] - wj['utm_x']
-                    dy = wi['utm_y'] - wj['utm_y']
-                    dist_km = math.sqrt(dx*dx + dy*dy) / 1000.0
-                    mob[i][j] = max(1, math.ceil(dist_km / 5.0))
-                else:
-                    bi = name_to_base_idx.get(wi['name'], i)
-                    bj = name_to_base_idx.get(wj['name'], j)
-                    mob[i][j] = base_instance['mob_time'][bi][bj]
-        inst['mob_time'] = mob
-    # else: mob_time already correct from deep copy
+    inst['mob_time'] = mob
 
     # 5. Rig count
     if spec.n_rigs is not None:
