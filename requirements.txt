@@ -1,0 +1,15 @@
+# Optimisation
+ortools>=9.10
+
+# Data
+pandas>=2.0
+numpy>=1.26
+
+# Visualisation
+matplotlib>=3.8
+plotly>=5.18
+
+# LLM layer
+pydantic>=2.5
+anthropic>=0.40      # Anthropic Claude API (install when using --interactive)
+# openai>=1.0        # Alternative: uncomment to use OpenAI instead
