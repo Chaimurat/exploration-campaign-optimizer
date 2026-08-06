@@ -166,7 +166,7 @@ def save_results(instance, exact_pareto, ga_pareto, gaps,
     avg_gap = (sum(g['gap_pct'] for g in gaps) / len(gaps)) if gaps else None
     max_gap = max((g['gap_pct'] for g in gaps), default=None)
 
-    with open(csv_path, 'w', newline='') as f:
+    with open(csv_path, 'w', newline='', encoding='utf-8-sig') as f:
         w = csv.writer(f)
         w.writerow([])
         w.writerow(['INSTANCE: {}'.format(label)])
