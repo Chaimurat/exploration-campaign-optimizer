@@ -175,3 +175,71 @@ def plot_comparison_pareto_fronts(exact_pareto, ga_pareto,
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
     print("[SUCCESS] Pareto plot saved to: {}".format(output_path))
+
+
+def plot_knockout_comparison(base_exact, ko_results_list,
+                              output_path="images/pareto_knockout.png",
+                              oil_price=80,
+                              campaign_label="Block 34 Exploration Campaign"):
+    import os, matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as mpatches
+    fig,ax=plt.subplots(figsize=(11,6))
+    base_pts=sorted([(p["makespan"],p["deferred_production"]*oil_price) for p in base_exact],key=lambda p:p[0])
+    bpx,bpy=zip(*base_pts)
+    ax.plot(bpx,bpy,color="steelblue",linestyle="--",linewidth=2,zorder=4)
+    ax.scatter(bpx,bpy,color="steelblue",s=90,facecolors="none",edgecolors="steelblue",linewidths=2,zorder=5)
+    ko_colors=["#d62728","#ff7f0e","#9467bd"]
+    handles=[mpatches.Patch(facecolor="none",edgecolor="steelblue",linewidth=2,label="Baseline (20 wells)")]
+    for i,ko in enumerate(ko_results_list):
+        if not ko["ko_exact_pareto"]: continue
+        c=ko_colors[i%len(ko_colors)]
+        pts=sorted([(p["makespan"],p["deferred_production"]*oil_price) for p in ko["ko_exact_pareto"]],key=lambda p:p[0])
+        kpx,kpy=zip(*pts)
+        ax.plot(kpx,kpy,color=c,linestyle="--",linewidth=1.8,zorder=4)
+        ax.scatter(kpx,kpy,color=c,s=80,facecolors="none",edgecolors=c,linewidths=2,zorder=5)
+        delta_str="" if ko["delta_deferred_usd"] is None else " (+${:.0f}M deferred)".format(ko["delta_deferred_usd"]/1e6)
+        handles.append(mpatches.Patch(facecolor="none",edgecolor=c,linewidth=2,
+            label="Knock out {}{}".format(ko["well"],delta_str)))
+    ax.legend(handles=handles,loc="upper right",frameon=True,fontsize=9)
+    ax.set_title("{}\nKnockout Scenario: Pareto Front Comparison".format(campaign_label),fontsize=12,fontweight="bold",pad=12)
+    ax.set_xlabel("Makespan (campaign days)",fontsize=11)
+    ax.set_ylabel("Deferred Discovery Value (USD)",fontsize=11)
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x,_:"${:.0f}M".format(x/1e6)))
+    ax.grid(True,linestyle=":",alpha=0.55); ax.set_facecolor("#fafafa")
+    os.makedirs(os.path.dirname(output_path) or ".",exist_ok=True)
+    plt.tight_layout(); plt.savefig(output_path,dpi=300,bbox_inches="tight"); plt.close()
+    print("[SUCCESS] Knockout plot saved to: {}".format(output_path))
+
+
+def plot_scaling_results(results, output_path="images/pareto_scaling.png"):
+    import os, matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    sizes  = [r["n_wells"]         for r in results]
+    times  = [r["solve_time_s"]    for r in results]
+    points = [r["n_pareto_points"] for r in results]
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    ax1.plot(sizes, times, "o-", color="steelblue", linewidth=2.2, markersize=9, zorder=5)
+    for x, y in zip(sizes, times):
+        ax1.annotate("{:.1f}s".format(y), (x, y),
+            textcoords="offset points", xytext=(0, 10), ha="center", fontsize=9)
+    ax1.set_xlabel("Number of Wells", fontsize=11)
+    ax1.set_ylabel("CP-SAT Solve Time (s)", fontsize=11)
+    ax1.set_title("Runtime Scaling (CP-SAT e-constraint sweep)", fontsize=12, fontweight="bold")
+    ax1.set_xticks(sizes); ax1.grid(True, linestyle=":", alpha=0.55); ax1.set_facecolor("#fafafa")
+    bars = ax2.bar([str(s) for s in sizes], points, color="steelblue", alpha=0.75, width=0.5, zorder=3)
+    for bar, v in zip(bars, points):
+        ax2.text(bar.get_x()+bar.get_width()/2, bar.get_height()+0.2, str(v),
+                 ha="center", va="bottom", fontsize=10, fontweight="bold")
+    ax2.set_xlabel("Number of Wells", fontsize=11)
+    ax2.set_ylabel("Pareto Points Found", fontsize=11)
+    ax2.set_title("Pareto Front Density vs. Instance Size", fontsize=12, fontweight="bold")
+    ax2.grid(True, linestyle=":", alpha=0.55, axis="y"); ax2.set_facecolor("#fafafa")
+    plt.suptitle("Block 34 Exploration Campaign -- Norwegian North Sea\nCP-SAT Scalability Study",
+        fontsize=13, fontweight="bold", y=1.02)
+    plt.tight_layout()
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+    plt.savefig(output_path, dpi=300, bbox_inches="tight"); plt.close()
+    print("[SUCCESS] Scaling plot saved to:", output_path)

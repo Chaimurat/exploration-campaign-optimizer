@@ -311,12 +311,37 @@ def main():
             title=CAMPAIGN_LABEL + " -- Optimal Schedule"
         )
 
+
+    best_sched_ko = next((p['schedule'] for p in exact_all
+        if p['makespan'] == min(exact_pareto, key=lambda x: x['makespan'])['makespan']), None)
+    if best_sched_ko:
+        from src.well_visualizer import plot_knockout_comparison
+        ko_summaries = run_knockout_analysis(instance, exact_pareto, best_sched_ko)
+        if ko_summaries:
+            plot_knockout_comparison(exact_pareto, ko_summaries,
+                output_path=os.path.join(IMAGES_DIR, 'pareto_knockout.png'),
+                oil_price=instance['oil_price'], campaign_label=CAMPAIGN_LABEL)
     print("\n[DONE] All outputs in output/ and images/")
 
 
 # ---------------------------------------------------------------------------
 # Interactive (LLM) mode
 # ---------------------------------------------------------------------------
+
+def run_knockout_analysis(instance, base_exact_pareto, optimal_schedule, num_steps=12, time_limit=15.0):
+    from src.well_knockout import build_knockout_instance, select_knockout_wells, summarise_knockout
+    print("\n  [Knockout] selecting wells...")
+    candidates = select_knockout_wells(instance, optimal_schedule)
+    ko_summaries = []
+    for c in candidates:
+        print("\n  Knocking out: {} ({})".format(c['name'], c['reason']))
+        try: ko_inst = build_knockout_instance(instance, c['name'])
+        except ValueError as e: print("  SKIP:", e); continue
+        ko_exact, _, _, _ = run_exact_pareto_sweep(ko_inst, num_steps=num_steps, time_limit=time_limit)
+        ko_ga, _, _ = run_ga_pareto_sweep(ko_inst, generations=150)
+        summary = summarise_knockout(c['name'], c['reason'], base_exact_pareto, ko_exact, [], ko_ga, instance['oil_price'])
+        ko_summaries.append(summary)
+    return ko_summaries
 
 def interactive_mode(api_key, provider='anthropic'):
     from src.constraint_spec  import ConstraintSpec
