@@ -33,7 +33,7 @@ tracing the Pareto front.
 Custom GA with greedy decoder and order-crossover (OX). Nine weight combinations
 `(w_makespan, w_deferred)` from (0.9, 0.1) to (0.1, 0.9) explore the Pareto front.
 
-### LLM layer — Natural language interface (optional)
+### LLM layer — Natural language interface (added)
 A Claude Haiku call translates plain-English scheduling requests into a validated
 `ConstraintSpec` (Pydantic), which is compiled into a modified instance before
 the solver runs. The LLM never touches the optimisation — it only reformulates
