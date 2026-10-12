@@ -54,7 +54,7 @@ without downloading the raw CSVs.
 ## Installation
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/exploration-campaign-optimizer
+git clone https://github.com/chaimurat/exploration-campaign-optimizer
 cd exploration-campaign-optimizer
 python -m venv venv
 venv\Scripts\activate          # Windows
